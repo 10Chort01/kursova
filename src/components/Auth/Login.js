@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axiosInstance from '../../utils/axios';
+import axiosInstance, { auth } from '../../utils/axios';
 
 const Login = () => {
     const [formData, setFormData] = useState({
@@ -27,13 +27,16 @@ const Login = () => {
         
         try {
             const response = await axiosInstance.post('/auth/login', formData);
-            localStorage.setItem('token', response.data.token);
-            const userData = {
-                ...response.data.user,
-                id: response.data.user._id
-            };
-            localStorage.setItem('user', JSON.stringify(userData));
-            navigate('/');
+            const { accessToken, refreshToken, user } = response.data;
+            
+            // Зберігаємо токени через auth утиліту
+            auth.setTokens(accessToken, refreshToken);
+            
+            // Зберігаємо дані користувача
+            localStorage.setItem('user', JSON.stringify(user));
+            
+            // Перенаправляємо на сторінку профілю
+            navigate('/profile');
         } catch (err) {
             console.error('Помилка входу:', err);
             if (err.response) {

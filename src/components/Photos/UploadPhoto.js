@@ -44,7 +44,9 @@ const UploadPhoto = () => {
             formDataToSend.append('image', formData.image);
 
             const response = await axiosInstance.post('/photos', formDataToSend);
-            navigate(`/photos/${response.data._id}`);
+            console.log('Upload response:', response.data);
+            console.log('Photo ID in response:', response.data.id || response.data._id);
+            navigate(`/photos/${response.data.id || response.data._id}`);
         } catch (error) {
             console.error('Помилка завантаження фотографії:', error);
             if (error.response) {

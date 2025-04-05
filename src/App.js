@@ -6,21 +6,22 @@ import PhotoGrid from './components/Photos/PhotoGrid';
 import PhotoDetail from './components/Photos/PhotoDetail';
 import UploadPhoto from './components/Photos/UploadPhoto';
 import Profile from './components/Profile/Profile';
+import EditPhoto from './components/Photos/EditPhoto';
+import { auth } from './utils/axios';
 
 // Компонент для захисту маршрутів
 const PrivateRoute = ({ children }) => {
-    const token = localStorage.getItem('token');
-    return token ? children : <Navigate to="/login" replace />;
+    const { accessToken } = auth.getTokens();
+    return accessToken ? children : <Navigate to="/login" replace />;
 };
 
 // Компонент навігації
 const Navigation = () => {
     const navigate = useNavigate();
-    const token = localStorage.getItem('token');
+    const { accessToken } = auth.getTokens();
 
     const handleLogout = () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
+        auth.removeTokens();
         navigate('/login', { replace: true });
     };
 
@@ -41,7 +42,7 @@ const Navigation = () => {
                             >
                                 Головна
                             </Link>
-                            {token && (
+                            {accessToken && (
                                 <>
                                     <Link
                                         to="/upload"
@@ -60,7 +61,7 @@ const Navigation = () => {
                         </div>
                     </div>
                     <div className="flex items-center">
-                        {token ? (
+                        {accessToken ? (
                             <button
                                 onClick={handleLogout}
                                 className="ml-4 px-4 py-2 text-sm text-red-600 hover:text-red-800"
@@ -117,6 +118,7 @@ function App() {
                                 </PrivateRoute>
                             }
                         />
+                        <Route path="/photos/:id/edit" element={<EditPhoto />} />
                     </Routes>
                 </main>
             </div>

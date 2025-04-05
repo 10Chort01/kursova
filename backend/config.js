@@ -1,23 +1,20 @@
-const dotenv = require('dotenv');
-const path = require('path');
+require('dotenv').config();
 
-// Load environment variables from .env file
-dotenv.config();
-
-// Configuration object with hardcoded values
+// Configuration object with environment variables
 const config = {
     mongodb: {
-        uri: 'mongodb://127.0.0.1:27017/photo_app'
+        uri: process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/photo_app'
     },
     cloudinary: {
-        cloud_name: 'dxh0ymchw',
-        api_key: '646742527642466',
-        api_secret: 'nEdMC7JAc9iU_PEDzStv-C71S5A'
+        cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'dxh0ymchw',
+        api_key: process.env.CLOUDINARY_API_KEY || '646742527642466',
+        api_secret: process.env.CLOUDINARY_API_SECRET || 'nEdMC7JAc9iU_PEDzStv-C71S5A'
     },
     jwt: {
-        secret: 'your_jwt_secret_key_here'
+        secret: process.env.JWT_SECRET || 'your_jwt_secret_key_here',
+        refreshSecret: process.env.JWT_REFRESH_SECRET || 'your_jwt_refresh_secret_key_here'
     },
-    port: 5002
+    port: process.env.PORT || 5002
 };
 
 // Log configuration (without sensitive data)
@@ -33,7 +30,8 @@ console.log('Configuration loaded:', {
     },
     jwt: {
         secret: config.jwt.secret ? 'present' : 'missing',
-        secretLength: config.jwt.secret ? config.jwt.secret.length : 0
+        secretLength: config.jwt.secret ? config.jwt.secret.length : 0,
+        refreshSecret: config.jwt.refreshSecret ? 'present' : 'missing'
     },
     port: config.port
 });

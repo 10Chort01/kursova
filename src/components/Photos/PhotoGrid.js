@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { StarIcon, ChatBubbleLeftIcon, TagIcon } from '@heroicons/react/24/solid';
 import API_URL from '../../config';
 import axiosInstance from '../../utils/axios';
+import { getTokens } from '../../utils/auth';
 
 const PhotoGrid = () => {
     const [photos, setPhotos] = useState([]);
@@ -10,10 +11,11 @@ const PhotoGrid = () => {
     const [error, setError] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [sortBy, setSortBy] = useState('newest');
+    const navigate = useNavigate();
 
     useEffect(() => {
         fetchPhotos();
-    }, [searchTerm, sortBy]);
+    }, [sortBy]);
 
     const fetchPhotos = async () => {
         try {
@@ -29,13 +31,16 @@ const PhotoGrid = () => {
             
             if (sortBy) {
                 params.append('sort', sortBy);
+                console.log('Sorting photos by:', sortBy);
             }
             
             if (params.toString()) {
                 url += `?${params.toString()}`;
             }
             
+            console.log('Fetching photos with URL:', url);
             const response = await axiosInstance.get(url);
+            console.log('Photos fetched:', response.data.length);
             setPhotos(response.data);
         } catch (error) {
             console.error('Помилка отримання фотографій:', error);
@@ -58,6 +63,10 @@ const PhotoGrid = () => {
 
     const handleSort = (e) => {
         setSortBy(e.target.value);
+    };
+
+    const handleSearchChange = (e) => {
+        setSearchTerm(e.target.value);
     };
 
     if (loading) {
@@ -84,7 +93,7 @@ const PhotoGrid = () => {
                         type="text"
                         placeholder="Пошук фотографій..."
                         value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
+                        onChange={handleSearchChange}
                         className="flex-1 p-2 border rounded"
                     />
                     <button
@@ -118,17 +127,33 @@ const PhotoGrid = () => {
                             <h3 className="text-xl font-semibold mb-2">{photo.title}</h3>
                             <p className="text-gray-600 mb-4">{photo.description}</p>
                             
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center">
-                                    <span className="text-yellow-500 mr-1">★</span>
-                                    <span>{photo.averageRating ? photo.averageRating.toFixed(1) : 'Немає оцінок'}</span>
+                            <div className="flex flex-col space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center">
+                                        <span className="text-yellow-500 mr-1">★</span>
+                                        <span>{photo.averageRating ? photo.averageRating.toFixed(1) : 'Немає оцінок'}</span>
+                                    </div>
+                                    <div className="text-sm text-gray-500">
+                                        {photo.createdAt ? new Date(photo.createdAt).toLocaleDateString() : 'Дата невідома'}
+                                    </div>
                                 </div>
-                                <Link
-                                    to={`/photos/${photo._id}`}
-                                    className="text-blue-500 hover:text-blue-600"
-                                >
-                                    Детальніше
-                                </Link>
+                                <div className="flex justify-end">
+                                    <Link
+                                        to={`/photos/${photo.id || photo._id}`}
+                                        className="text-blue-500 hover:text-blue-600"
+                                        onClick={(e) => {
+                                            const { accessToken } = getTokens();
+                                            if (!accessToken) {
+                                                e.preventDefault();
+                                                if (window.confirm('Для перегляду деталей фотографії потрібно увійти. Бажаєте увійти?')) {
+                                                    navigate('/login');
+                                                }
+                                            }
+                                        }}
+                                    >
+                                        Детальніше
+                                    </Link>
+                                </div>
                             </div>
                         </div>
                     </div>

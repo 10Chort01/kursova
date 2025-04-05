@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import axiosInstance from '../../utils/axios';
 import { StarIcon } from '@heroicons/react/24/solid';
+import { getTokens } from '../../utils/auth';
 
 const PhotoDetail = () => {
     const { id } = useParams();
@@ -16,13 +17,24 @@ const PhotoDetail = () => {
     const [isRatingChanged, setIsRatingChanged] = useState(false);
 
     useEffect(() => {
+        if (!id) {
+            setError('ID фотографії не вказано');
+            setLoading(false);
+            return;
+        }
+        console.log('PhotoDetail component mounted with ID:', id);
         fetchPhoto();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [id]);
 
     const fetchPhoto = async () => {
         try {
+            if (!id) {
+                throw new Error('ID фотографії не вказано');
+            }
+            console.log('Fetching photo with ID:', id);
             const response = await axiosInstance.get(`/photos/${id}`);
+            console.log('Photo data received:', response.data);
+            console.log('Photo ID in response:', response.data.id || response.data._id);
             setPhoto(response.data);
             
             // Встановлюємо рейтинг користувача, якщо він є
@@ -41,7 +53,7 @@ const PhotoDetail = () => {
             setLoading(false);
         } catch (err) {
             console.error('Error fetching photo:', err);
-            setError('Помилка завантаження фотографії');
+            setError(err.response?.data?.message || 'Помилка завантаження фотографії');
             setLoading(false);
         }
     };
@@ -49,18 +61,32 @@ const PhotoDetail = () => {
     const handleComment = async (e) => {
         e.preventDefault();
         try {
+            const { accessToken } = getTokens();
+            if (!accessToken) {
+                setError('Будь ласка, увійдіть в систему');
+                return;
+            }
+            
+            if (!comment.trim()) {
+                setError('Коментар не може бути порожнім');
+                return;
+            }
+            
+            console.log('Adding comment to photo with ID:', id);
             await axiosInstance.post(`/photos/${id}/comment`, { text: comment });
             setComment('');
             fetchPhoto();
         } catch (err) {
-            setError('Помилка додавання коментаря');
+            console.error('Error adding comment:', err);
+            setError(err.response?.data?.message || 'Помилка додавання коментаря');
         }
     };
 
     const handleRate = async (value) => {
         console.log('handleRate called with value:', value, 'type:', typeof value);
         
-        if (!localStorage.getItem('token')) {
+        const { accessToken } = getTokens();
+        if (!accessToken) {
             setError('Будь ласка, увійдіть в систему');
             return;
         }
@@ -85,14 +111,14 @@ const PhotoDetail = () => {
             console.log('handleSaveRating called with tempRating:', tempRating, 'type:', typeof tempRating);
             
             const user = JSON.parse(localStorage.getItem('user'));
-            const token = localStorage.getItem('token');
+            const { accessToken } = getTokens();
             
             if (!user || !user._id) {
                 setError('Будь ласка, увійдіть в систему');
                 return;
             }
             
-            if (!token) {
+            if (!accessToken) {
                 setError('Токен авторизації відсутній');
                 return;
             }
@@ -110,7 +136,7 @@ const PhotoDetail = () => {
 
             console.log('Saving rating:', ratingValue, 'type:', typeof ratingValue);
             console.log('User:', user);
-            console.log('Token:', token);
+            console.log('Token:', accessToken);
 
             await axiosInstance.post(`/photos/${id}/rate`, { value: ratingValue });
             setUserRating(ratingValue);
@@ -128,6 +154,7 @@ const PhotoDetail = () => {
         }
 
         try {
+            console.log('Deleting photo with ID:', id);
             await axiosInstance.delete(`/photos/${id}`);
             navigate('/');
         } catch (err) {
@@ -265,12 +292,21 @@ const PhotoDetail = () => {
                     Назад
                 </button>
                 {photo.user && photo.user._id === JSON.parse(localStorage.getItem('user'))?._id && (
-                    <button
-                        onClick={handleDelete}
-                        className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
-                    >
-                        Видалити
-                    </button>
+                    <div className="flex space-x-2">
+                        <Link
+                            to={`/photos/${photo.id || photo._id}/edit`}
+                            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                            onClick={() => console.log('Navigating to edit photo with ID:', photo.id || photo._id)}
+                        >
+                            Редагувати
+                        </Link>
+                        <button
+                            onClick={handleDelete}
+                            className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+                        >
+                            Видалити
+                        </button>
+                    </div>
                 )}
             </div>
         </div>

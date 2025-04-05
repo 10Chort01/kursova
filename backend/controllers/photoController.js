@@ -71,8 +71,10 @@ exports.getAllPhotos = async (req, res) => {
         }
 
         // Сортування
-        let sortOption = { createdAt: -1 };
-        if (sort === 'rating') {
+        let sortOption = { createdAt: -1 }; // За замовчуванням новіші спочатку
+        if (sort === 'oldest') {
+            sortOption = { createdAt: 1 }; // Старіші спочатку
+        } else if (sort === 'rating') {
             // Спочатку отримуємо всі фотографії
             const photos = await Photo.find(query)
                 .populate('user', 'username avatar')
@@ -311,76 +313,32 @@ exports.deletePhoto = async (req, res) => {
     }
 };
 
-// Оновлення фотографії
+// Редагування фотографії
 exports.updatePhoto = async (req, res) => {
     try {
-        console.log('=== Starting updatePhoto function ===');
-        console.log('Request body:', req.body);
-        console.log('Request params:', req.params);
-        console.log('Request user:', req.user);
-        console.log('Photo ID to update:', req.params.id);
+        const { title, description } = req.body;
+        const photoId = req.params.id;
 
-        const photo = await Photo.findById(req.params.id);
-        console.log('Found photo:', photo ? photo._id : 'Not found');
-
+        // Знаходимо фото
+        const photo = await Photo.findById(photoId);
         if (!photo) {
-            console.log('Photo not found with ID:', req.params.id);
             return res.status(404).json({ message: 'Фотографію не знайдено' });
         }
 
-        // Перевірка чи користувач є власником фотографії
-        console.log('User ID:', req.user._id);
-        console.log('Photo owner ID:', photo.user);
-        console.log('Is owner:', photo.user.toString() === req.user._id.toString());
-        
+        // Перевіряємо чи користувач є власником фото
         if (photo.user.toString() !== req.user._id.toString()) {
-            console.log('User is not the owner of the photo');
             return res.status(403).json({ message: 'Немає прав для редагування цієї фотографії' });
         }
 
-        // Оновлення полів фотографії
-        if (req.body.title) photo.title = req.body.title;
-        if (req.body.description) photo.description = req.body.description;
-
-        console.log('Updated photo data:', {
-            title: photo.title,
-            description: photo.description
-        });
+        // Оновлюємо дані
+        photo.title = title || photo.title;
+        photo.description = description || photo.description;
 
         await photo.save();
-        console.log('Photo updated successfully');
 
-        // Отримуємо оновлену фотографію з усіма даними
-        const updatedPhoto = await Photo.findById(req.params.id)
-            .populate('user', 'username avatar bio')
-            .populate('ratings.user', 'username')
-            .populate('comments.user', 'username avatar');
-
-        // Обчислюємо середній рейтинг
-        const photoObj = updatedPhoto.toObject();
-        if (updatedPhoto.ratings && updatedPhoto.ratings.length > 0) {
-            const sum = updatedPhoto.ratings.reduce((acc, curr) => acc + Number(curr.value), 0);
-            photoObj.averageRating = Number((sum / updatedPhoto.ratings.length).toFixed(1));
-        } else {
-            photoObj.averageRating = 0;
-        }
-
-        console.log('Sending response...');
-        res.json(photoObj);
-        console.log('=== Finished updatePhoto function ===');
+        res.json(photo);
     } catch (error) {
-        console.error('=== Error in updatePhoto function ===');
-        console.error('Error details:', error);
-        console.error('Error name:', error.name);
-        console.error('Error message:', error.message);
-        console.error('Stack trace:', error.stack);
-        
-        if (error.name === 'ValidationError') {
-            return res.status(400).json({ message: 'Недійсні дані', error: error.message });
-        }
-        if (error.name === 'CastError') {
-            return res.status(400).json({ message: 'Недійсний ID фотографії', error: error.message });
-        }
-        res.status(500).json({ message: 'Помилка оновлення фотографії', error: error.message });
+        console.error('Помилка редагування фотографії:', error);
+        res.status(500).json({ message: 'Помилка редагування фотографії', error: error.message });
     }
 }; 

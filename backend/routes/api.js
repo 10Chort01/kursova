@@ -59,19 +59,20 @@ const handleMulterError = (err, req, res, next) => {
 // Маршрути авторизації
 router.post('/auth/register', authController.register);
 router.post('/auth/login', authController.login);
-
-// Маршрути для користувачів
-router.put('/users/profile', auth, upload.single('avatar'), handleMulterError, userController.updateProfile);
-router.get('/users/:id/photos', userController.getUserPhotos);
+router.post('/auth/refresh-token', authController.refreshToken);
+router.post('/auth/logout', auth, authController.logout);
 
 // Маршрути для фотографій
-router.post('/photos', auth, upload.single('image'), handleMulterError, photoController.uploadPhoto);
 router.get('/photos', photoController.getAllPhotos);
-router.get('/photos/tags', photoController.getAllTags);
 router.get('/photos/:id', photoController.getPhotoById);
+router.post('/photos', auth, upload.single('image'), handleMulterError, photoController.uploadPhoto);
 router.put('/photos/:id', auth, photoController.updatePhoto);
 router.post('/photos/:id/rate', auth, photoController.addRating);
 router.post('/photos/:id/comment', auth, photoController.addComment);
 router.delete('/photos/:id', auth, photoController.deletePhoto);
+
+// Маршрути для користувачів
+router.get('/users/:id/photos', userController.getUserPhotos);
+router.put('/users/profile', auth, upload.single('avatar'), handleMulterError, userController.updateProfile);
 
 module.exports = router; 

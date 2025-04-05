@@ -76,7 +76,7 @@ exports.getUserPhotos = async (req, res) => {
 
         // Обчислюємо середній рейтинг для кожної фотографії
         const photosWithRating = photos.map(photo => {
-            const photoObj = photo.toObject({ virtuals: true });
+            const photoObj = photo.toObject({ virtuals: true, getters: true });
             if (photo.ratings && photo.ratings.length > 0) {
                 const sum = photo.ratings.reduce((acc, curr) => acc + curr.value, 0);
                 photoObj.averageRating = Number((sum / photo.ratings.length).toFixed(1));

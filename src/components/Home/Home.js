@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import axiosInstance from '../../utils/axios';
+import { getTokens } from '../../utils/auth';
 
 const Home = () => {
     const [photos, setPhotos] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [sort, setSort] = useState('newest');
+    const navigate = useNavigate();
 
     useEffect(() => {
         fetchPhotos();
@@ -65,15 +68,24 @@ const Home = () => {
                             key={photo._id}
                             className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300"
                         >
-                            <Link to={`/photos/${photo._id}`}>
+                            <Link to={`/photos/${photo.id || photo._id}`}>
                                 <img
                                     src={photo.imageUrl}
                                     alt={photo.title}
                                     className="w-full h-48 object-cover"
+                                    onClick={(e) => {
+                                        const { accessToken } = getTokens();
+                                        if (!accessToken) {
+                                            e.preventDefault();
+                                            if (window.confirm('Для перегляду деталей фотографії потрібно увійти. Бажаєте увійти?')) {
+                                                navigate('/login');
+                                            }
+                                        }
+                                    }}
                                 />
                             </Link>
                             <div className="p-4">
-                                <Link to={`/photos/${photo._id}`}>
+                                <Link to={`/photos/${photo.id || photo._id}`}>
                                     <h2 className="text-xl font-semibold text-gray-900 mb-2">
                                         {photo.title}
                                     </h2>

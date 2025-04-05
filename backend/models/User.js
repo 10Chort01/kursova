@@ -23,11 +23,15 @@ const userSchema = new mongoose.Schema({
     },
     avatar: {
         type: String,
-        default: '/default-avatar.png'
+        default: ''
     },
     bio: {
         type: String,
         default: ''
+    },
+    refreshToken: {
+        type: String,
+        default: null
     },
     createdAt: {
         type: Date,
@@ -48,7 +52,7 @@ userSchema.pre('save', async function(next) {
     }
 });
 
-// Метод для перевірки паролю
+// Метод для порівняння паролів
 userSchema.methods.comparePassword = async function(candidatePassword) {
     try {
         return await bcrypt.compare(candidatePassword, this.password);
